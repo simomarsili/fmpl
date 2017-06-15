@@ -7,15 +7,7 @@ module data
   implicit none
   private
 
-  public :: w
-
-  public :: initialize_data, read_data
-
-  integer :: nd   ! number of data samples
-  integer :: nv   ! number of variables
-  integer :: ns ! number of states per variable
-
-  real(kflt), allocatable :: w(:)
+  public :: initialize_data, read_data, data_reweight
 
 contains
 
@@ -46,12 +38,6 @@ contains
     end do
     rewind(udata)
 
-    ! allocate memory for the data
-
-    allocate(w(nd),stat=err)
-
-    neff = nd
-
   end subroutine initialize_data
   
   subroutine read_data(udata,w_id,ns,neff,data_samples)
@@ -62,41 +48,43 @@ contains
     integer, intent(out) :: ns
     real(kflt), intent(out) :: neff
     integer, intent(out) :: data_samples(:,:)
+    integer :: nd,nv
     integer :: i
     integer :: nfields
     integer :: err
     character(long_string) :: line,newline
+    real(kflt_single)      :: finish,start,t0,tm
 
     nv = size(data_samples,dim=1)
     nd = size(data_samples,dim=2)
+    call cpu_time(t0)
     do i = 1,nd
-       if(mod(i,100) == 0)write(0,*) 'data: ', i
        read(udata,'(a)',iostat=err) line
        call parser_nfields(line,newline,nfields)
        read(newline,*,iostat=err) data_samples(:,i)
-       if(err > 0) write(0,*) 'error: reading data'
+       call cpu_time(finish)
+       if (finish - t0 > 3.0) then
+          write(0,'(i6,"/",i6)') i, nd
+          t0 = finish
+       else if (i == nd) then 
+          write(0,'(i6,"/",i6)') i, nd         
+       end if
+       flush(0)
+       if(err > 0) write(0,*) 'error ! reading data'
     end do
 
     if (any(data_samples==0)) data_samples = data_samples + 1
 
     ns = maxval(data_samples)
     
-    write(0,*) '(nd, nv, ns)', nd, nv, ns
-    flush(0)
-    
-    if(w_id > 1.E-10_kflt) then
-       write(0,*) 'computing weights...'
-       call data_reweight(data_samples,w_id,neff)
-    else
-       w = 1.0_kflt / real(nd)
-    end if
-
   end subroutine read_data
 
-  subroutine data_reweight(data_samples,w_id,neff)
+  subroutine data_reweight(data_samples,w_id,neff,w)
     integer, intent(in) :: data_samples(:,:)
     real(kflt), intent(in) :: w_id
     real(kflt), intent(out) :: neff
+    real(kflt), intent(out) :: w(:)
+    integer :: nd,nv
     integer :: id,jd
     integer :: err
     integer, allocatable :: x(:),y(:)
@@ -122,7 +110,6 @@ contains
     w = 1.0_kflt / w
     neff = sum(w)
     w = w / neff
-   write(0,*) 'neff: ', neff
 
   end subroutine data_reweight
 
