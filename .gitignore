@@ -2,7 +2,7 @@
 *#
 src/*.mod
 src/*.o
-src/mpl
+src/fmpl
 test
 !test.bash
 !test.txt
