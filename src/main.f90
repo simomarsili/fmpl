@@ -2,7 +2,7 @@
 ! All rights reserved.
 ! License: BSD 3 clause
 
-program mpl
+program fmpl
   use kinds
   use constants,     only: long_string
   use command_line,  only: read_args
@@ -123,7 +123,7 @@ program mpl
   if (err /= 0) stop
 
 101 format(&
-         '# mpl                                                              '/&
+         '# fmpl                                                             '/&
          '#                                                                  '/&
          '# input data file: ',a,'                                           '/&
          '# regularization: ',f6.4,'                                         '/&
@@ -138,10 +138,10 @@ program mpl
          'Classes per variable: ',i6,'                                       ')
 
 100 format(/&
-         'mpl                                                            '/&
+         'fmpl                                                           '/&
          '                                                               '/&
          'Usage:                                                         '/&
-         '    mpl [options] -i <file>                                    '/&
+         '    fmpl [options] -i <file>                                   '/&
          '                                                               '/&
          'Options:                                                       '/&
          '-h, --help                                                     '/&
@@ -199,4 +199,4 @@ contains
     end do
   end subroutine reshape_prm
 
-end program mpl
+end program fmpl
