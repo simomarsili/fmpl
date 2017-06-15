@@ -123,7 +123,7 @@ program fmpl
   if (err /= 0) stop
 
 101 format(&
-         '# mpl                                                              '/&
+         '# fmpl                                                             '/&
          '#                                                                  '/&
          '# input data file: ',a,'                                           '/&
          '# regularization: ',f6.4,'                                         '/&

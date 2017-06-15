@@ -1,5 +1,3 @@
-
-
 # fmpl
 
 **fmpl** is a Fortran code for structure learning of discrete graphical models.
