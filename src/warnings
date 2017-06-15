@@ -1,0 +1,89 @@
+dvmlm.f:1286:72: Warning: Deleted feature: ASSIGN statement at (1)
+dvmlm.f:1291:19:
+
+    20    go to next,(30, 50, 70, 110)
+                   1
+Warning: Deleted feature: Assigned GOTO statement at (1)
+dvmlm.f:1293:72: Warning: Deleted feature: ASSIGN statement at (1)
+dvmlm.f:1302:72: Warning: Deleted feature: ASSIGN statement at (1)
+dvmlm.f:1309:72: Warning: Deleted feature: ASSIGN statement at (1)
+dvmlm.f:1322:5:
+
+   110 if( dabs(dx(i)) .le. xmax ) go to 115
+     1
+Warning: Label 110 at (1) defined but not used
+dvmlm.f:1317:5:
+
+    70 if( dabs(dx(i)) .gt. cutlo ) go to 75
+     1
+Warning: Label 70 at (1) defined but not used
+dvmlm.f:1298:5:
+
+    50 if( dx(i) .eq. zero) go to 200
+     1
+Warning: Label 50 at (1) defined but not used
+dvmlm.f:1298:10:
+
+    50 if( dx(i) .eq. zero) go to 200
+          1
+Warning: Equality comparison for REAL(8) at (1)
+dvmlm.f:620:10:
+
+       if (stp .eq. stpmax .and. f .le. ftest .and. g .le. gtest)
+          1
+Warning: Equality comparison for REAL(8) at (1)
+dvmlm.f:622:10:
+
+       if (stp .eq. stpmin .and. (f .gt. ftest .or. g .ge. gtest))
+          1
+Warning: Equality comparison for REAL(8) at (1)
+dvmlm.f:897:30:
+
+          if (r .lt. zero .and. gamma .ne. zero) then
+                              1
+Warning: Inequality comparison for REAL(8) at (1)
+dvmlm.f:1083:10:
+
+       if (da .eq. 0.0d0) return
+          1
+Warning: Equality comparison for REAL(8) at (1)
+command_line.f90:11:34:
+
+   character(long_string) :: syntax = 'syntax: mpl -i <data_file> -l <regularization_strength> [-w <weigths_file>] [-g]'
+                                  1
+Warning: Unused PRIVATE module variable ‘syntax’ declared at (1) [-Wunused-value]
+model.f90:260:36:
+
+     vcouplings = reshape(prm(ns+1:),(/ns,nv,ns/))
+                                    1
+Warning: Creating array temporary at (1) [-Warray-temporaries]
+model.f90:260:36:
+
+     vcouplings = reshape(prm(ns+1:),(/ns,nv,ns/))
+                                    1
+Warning: Creating array temporary at (1) [-Warray-temporaries]
+model.f90:251:34:
+
+     grd(ns+1:) = reshape(model_f2,(/dim/))
+                                  1
+Warning: Creating array temporary at (1) [-Warray-temporaries]
+model.f90:251:34:
+
+     grd(ns+1:) = reshape(model_f2,(/dim/))
+                                  1
+Warning: Creating array temporary at (1) [-Warray-temporaries]
+dvmlm_wrapper.f90:52:20:
+
+     call dvmlm(ndim,prm,f,grd,frtol,fatol,fmin,task,mstep,&
+                    1
+Warning: Creating array temporary at (1) [-Warray-temporaries]
+dvmlm_wrapper.f90:52:26:
+
+     call dvmlm(ndim,prm,f,grd,frtol,fatol,fmin,task,mstep,&
+                          1
+Warning: Creating array temporary at (1) [-Warray-temporaries]
+mpl.f90:11:6:
+
+   use data,          only: nd,nv,ns,data_read
+      1
+Warning: Unused module variable ‘nd’ which has been explicitly imported at (1) [-Wunused-variable]

@@ -1,88 +1,157 @@
-! Copyright (C) 2015, 2016, Simone Marsili 
+! Copyright (C) 2015-2017, Simone Marsili 
 ! All rights reserved.
 ! License: BSD 3 clause
 
 program mpl
-  use nrtype
-  use units
-  use command_line, only: &
-       command_line_read
-  use data, only: &
-       nv, &
-       data_read
-  use model, only: &
-       model_initialize, &
-       model_set_myv, &
-       model_collect_prm
-  use scrs, only: &
-       compute_scores, &
-       print_scores
-  use dvmlm_wrapper, only: &
-       dvmlm_minimize
+  use kinds
+  use constants,     only: long_string
+  use command_line,  only: read_args
+  use data,          only: initialize_data,read_data
+  use model,         only: initialize_model, model_set_myv,fix_gauge
+  use scrs,          only: print_mat, compute_scores
+  use dvmlm_wrapper, only: dvmlm_minimize
   implicit none
-  integer(I4B) :: err,toterr
-  integer(I4B) :: iv
-  integer(I4B) :: niter,neval
-  real :: finish,start,start_min,end_min
-  integer(I4B) :: udata,uscrs
-  character(max_string_length) :: data_file,scores_file
-  real(DP) :: w_id
-  integer(I4B) :: regu
-  real(DP) :: lambda
-  logical :: skip_gaps
+  ! input variables
+  character(long_string) :: data_file, scores_file
+  real(kflt)             :: w_id, lambda
+  integer                :: ignore_pivot, accuracy
+  character(1)           :: scores_format
+  ! data dimensions
+  integer :: nd ! n. of samples
+  integer :: nv ! n. of variables
+  integer :: ns ! n. of classes
+  real(kflt) :: neff
+  ! main arrays for the run
+  integer,    allocatable :: data_samples(:,:)  ! nv x nd
+  real(kflt), allocatable :: prm(:,:)           ! (ns + ns x ns x nv) x nv
+  real(kflt), allocatable :: grd(:)             ! (ns + ns x ns x nv) x nv
+  real(kflt), allocatable :: fields(:,:)        ! ns x nv
+  real(kflt), allocatable :: couplings(:,:,:,:) ! ns x ns x nv x nv
+  real(kflt), allocatable :: scores(:,:)        ! nv x nv
+  ! 
+  integer                :: udata,uscrs
+  integer                :: err,iv
+  integer                :: niter,neval
+  real(kflt_single)      :: finish,start,start_min,end_min
 
-  call units_initialize()
-
-  toterr=0
-  ! get command line args 
-  call command_line_read(err,data_file,w_id,regu,lambda,skip_gaps)
-  if(len_trim(data_file) == 0) then 
-     toterr = toterr + 1
-     write(0,*) 'error: data filename is needed'
-  end if
-
-  ! open data file
-  call units_open(data_file,udata,'O',err)
+  ! get command line 
+  call read_args(data_file,w_id,lambda,ignore_pivot,accuracy,scores_format,err)
   if(err /= 0) then 
-     toterr = toterr + 1
-     write(0,*) 'error: cant find data file'
-  end if
-  scores_file = trim(data_file)//'.scores'
-  call units_open(scores_file,uscrs,'U',err)
-
-  if (toterr > 0) then 
-     write(0,*) 'program will exit'
+     write(0,100) 
      stop
   end if
 
+  ! open data file
+  open(newunit=udata,file=data_file,status='old',iostat=err)
+  if(err /= 0) then 
+     write(0,*) 'error: cant find data file'
+     stop
+  end if
+  
+  ! open scores file
+  scores_file = trim(data_file)//'.scores'
+  open(newunit=uscrs,file=scores_file,status='replace',iostat=err)
+
   write(0,*) 'reading data...'
-  call data_read(udata,w_id)
+  call initialize_data(udata,nd,nv,neff)
+  allocate(data_samples(nv,nd),stat=err)
+  call read_data(udata,w_id,ns,neff,data_samples)
 
-  write(0,*) 'initiale model...'
-  call model_initialize(regu,lambda)
+  ! allocate parameters and gradient
+  allocate(prm(ns + ns*ns*nv,nv),stat=err)
+  allocate(grd(ns + ns*ns*nv),stat=err)
+  allocate(scores(nv,nv),stat=err)
+  call initialize_model(nv,ns,lambda)
 
+  write(0,*) 'minimize...'
   call cpu_time(start_min)
-
-  ! compute averages for the model 
-  write(0,*) 'minimization...'
-
+  ! loop over features
   do iv = 1,nv
-     call model_set_myv(iv,err)
+     call model_set_myv(nd,nv,iv,data_samples,prm(:,iv),grd,err)
      niter = 0
      call cpu_time(start)
-     call dvmlm_minimize(niter,neval)
+     call dvmlm_minimize(nv,ns,nd,size(prm(:,iv)),data_samples,prm(:,iv),grd,accuracy,niter,neval)
      call cpu_time(finish)
      write(0,'(a,i5,a,2i5,a,f8.3,a)') ' variable ', iv, &
           '  converged (niter,neval) ', niter, neval, ' in ', finish-start, ' secs'
+     !call fix_gauge(nv,ns,prm(:ns,iv),prm(ns+1:,iv))
   end do
-  
   flush(0)
-
   call cpu_time(end_min)
+  
   write(0,*) 'minimization total (secs): ', end_min-start_min
   flush(0)
-  call model_collect_prm()
-  call compute_scores(skip_gaps)
-  call print_scores(uscrs)
+
+  ! reorder prm array into fields and couplings 
+  allocate(fields(ns,nv),couplings(ns,ns,nv,nv),stat=err)
+  call reshape_prm(nv,ns,prm,fields,couplings)
+  deallocate(prm,grd)
+
+  ! compute scores and print
+  call compute_scores(nv,ns,couplings,ignore_pivot,scores)
+  call print_mat(scores,uscrs,scores_format,err)
+  if (err /= 0) stop
+
+100 format(/&
+         'mpl                                                            '/&
+         '                                                               '/&
+         'Usage:                                                         '/&
+         '    mpl [options] -i <file>                                    '/&
+         '                                                               '/&
+         'Options:                                                       '/&
+         '-h, --help                                                     '/&
+         '    Display this help and exit.                                '/&
+         '                                                               '/&
+         '-l, --lambda <regularization_parameter> float, optional        '/&
+         '    Controls L_2 regularization strength.                      '/&
+         '    [default: 0.01]                                            '/&
+         '                                                               '/&
+         '-w, --reweight <percentage_identity> float, optional           '/&
+         '    Reweight data using a percentage identity threshold.       '/&
+         '    [default: no reweight.]                                    '/&
+         '                                                               '/&
+         '-a, --accuracy <accuracy_level> integer, optional              '/&
+         '    Larger values correspond to increased accuracy and slower  '/&
+         '    covergence. Possible values are {0, 1, 2}.                 '/&
+         '    [default: 1.]                                              '/&
+         '                                                               '/&
+         '--ignore_pivot <pivot_state> integer, optional                 '/&
+         '    Ignore the contribution of <pivot_state> to final scores.  '/&
+         '    [default: include all states.]                             '/&
+         '                                                               '/&
+         '--scores_format <scores_matrix_format> - string, optional      '/&
+         '    Possible values are {"rcv", "array", "coordinate"}.        '/&
+         '    "rcv": (row_index, column_index, value) format             '/&
+         '    "coordinate", "array": Matrix Market (MM) formats. See:    '/&
+         '    https://people.sc.fsu.edu/~jburkardt/data/mm/mm.html       '/&
+         '    [default: "rcv"].                                          '/)
+  
+  
+contains
+
+  subroutine reshape_prm(nv,ns,prm,fields,couplings)
+    ! reorder prm array into fields and couplings 
+    implicit none
+    integer, intent(in) :: nv,ns
+    real(kflt), intent(in) :: prm(:,:)
+    real(kflt), intent(out) :: fields(ns,nv)
+    real(kflt), intent(out) :: couplings(ns,ns,nv,nv)
+    integer :: err
+    integer :: iv,jv,is,js,k1,k2,k
+    
+    k = 0
+    do iv = 1,nv
+       fields(:,iv) = prm(:ns,iv)
+       k = ns
+       do jv = 1,nv
+          do js = 1,ns
+             do is = 1,ns
+                k = k + 1
+                couplings(js,is,jv,iv) = prm(k,iv)
+             end do
+          end do
+       end do
+    end do
+  end subroutine reshape_prm
 
 end program mpl

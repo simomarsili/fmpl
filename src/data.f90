@@ -1,39 +1,33 @@
-! Copyright (C) 2015, 2016, Simone Marsili 
+! Copyright (C) 2015-2017, Simone Marsili 
 ! All rights reserved.
 ! License: BSD 3 clause
 
 module data
-  use nrtype
+  use kinds
   implicit none
   private
 
-  public :: nd ! number of data samples
-  public :: nv ! number of variables
-  public :: ns ! number of states
-
-  public :: data_samples
   public :: w
-  public :: neff
 
-  public :: data_read
+  public :: initialize_data, read_data
 
-  integer(I4B) :: nd   ! number of data samples
-  integer(I4B) :: nv   ! number of variables
-  integer(I4B) :: ns ! number of states per variable
+  integer :: nd   ! number of data samples
+  integer :: nv   ! number of variables
+  integer :: ns ! number of states per variable
 
-  integer(I4B), allocatable :: data_samples(:,:)
-  real(DP), allocatable :: w(:)
-  real(DP) :: neff
+  real(kflt), allocatable :: w(:)
 
 contains
 
-  subroutine data_initialize(udata)
-    use units, only: max_string_length
+  subroutine initialize_data(udata,nd,nv,neff)
+    use constants, only: long_string
     use parser, only: parser_nfields
-    integer(I4B), intent(in) :: udata
-    integer(I4B) :: err
-    character(max_string_length) :: line,newline
-    integer(I4B) :: nfields
+    integer, intent(in) :: udata
+    integer, intent(out) :: nv,nd
+    real(kflt), intent(out) :: neff
+    integer :: nfields
+    integer :: err
+    character(long_string) :: line,newline
 
     ! read the first string
     read(udata,'(a)',iostat=err) line
@@ -54,25 +48,27 @@ contains
 
     ! allocate memory for the data
 
-    allocate(data_samples(nv,nd),stat=err)
     allocate(w(nd),stat=err)
 
     neff = nd
 
-  end subroutine data_initialize
-
-  subroutine data_read(udata,w_id)
-    use units, only: max_string_length
+  end subroutine initialize_data
+  
+  subroutine read_data(udata,w_id,ns,neff,data_samples)
+    use constants, only: long_string
     use parser, only: parser_nfields
-    integer(I4B), intent(IN) :: udata
-    real(DP), intent(IN) :: w_id
-    integer(I4B) :: err
-    character(max_string_length) :: line,newline
-    integer(I4B) :: nfields
-    integer(I4B) :: i
+    integer,    intent(in) :: udata
+    real(kflt), intent(in) :: w_id
+    integer, intent(out) :: ns
+    real(kflt), intent(out) :: neff
+    integer, intent(out) :: data_samples(:,:)
+    integer :: i
+    integer :: nfields
+    integer :: err
+    character(long_string) :: line,newline
 
-    call data_initialize(udata)
-
+    nv = size(data_samples,dim=1)
+    nd = size(data_samples,dim=2)
     do i = 1,nd
        if(mod(i,100) == 0)write(0,*) 'data: ', i
        read(udata,'(a)',iostat=err) line
@@ -84,30 +80,31 @@ contains
     if (any(data_samples==0)) data_samples = data_samples + 1
 
     ns = maxval(data_samples)
-
-    write(0,*) 'nd: ', nd
-    write(0,*) 'nv: ', nv
-    write(0,*) 'ns: ', ns
+    
+    write(0,*) '(nd, nv, ns)', nd, nv, ns
     flush(0)
-
-    if(w_id > 1.E-10_DP) then
+    
+    if(w_id > 1.E-10_kflt) then
        write(0,*) 'computing weights...'
-       call data_reweight(w_id)
+       call data_reweight(data_samples,w_id,neff)
     else
-       w = 1.0_DP / real(nd)
+       w = 1.0_kflt / real(nd)
     end if
 
-  end subroutine data_read
+  end subroutine read_data
 
-  subroutine data_reweight(w_id)
-    real(DP), intent(in) :: w_id
-    integer(I4B) :: err
-    integer(I4B), allocatable :: x(:),y(:)
-    integer(I4B) :: id,jd
+  subroutine data_reweight(data_samples,w_id,neff)
+    integer, intent(in) :: data_samples(:,:)
+    real(kflt), intent(in) :: w_id
+    real(kflt), intent(out) :: neff
+    integer :: id,jd
+    integer :: err
+    integer, allocatable :: x(:),y(:)
 
+    nv = size(data_samples,dim=1)
+    nd = size(data_samples,dim=2)
     allocate(x(nv),y(nv),stat=err)
-
-    w = 1.0_DP
+    w = 1.0_kflt
     do id = 1,nd-1
        if(mod(id,1000) == 0) then
           write(0,'(f5.1,a)') 100.0 * real(id) / real(nd),' %'
@@ -115,17 +112,17 @@ contains
        x = data_samples(:,id)
        do jd = id+1,nd
           y = data_samples(:,jd)
-          if(count(x == y) >= nint(nv * w_id * 0.01_DP)) then
-             w(id) = w(id) + 1.0_DP
-             w(jd) = w(jd) + 1.0_DP
+          if(count(x == y) >= nint(nv * w_id * 0.01_kflt)) then
+             w(id) = w(id) + 1.0_kflt
+             w(jd) = w(jd) + 1.0_kflt
           end if
        end do
     end do
 
-    w = 1.0_DP / w
+    w = 1.0_kflt / w
     neff = sum(w)
     w = w / neff
-    write(0,*) 'neff: ', neff
+   write(0,*) 'neff: ', neff
 
   end subroutine data_reweight
 

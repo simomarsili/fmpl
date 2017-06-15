@@ -1,4 +1,4 @@
-! Copyright (C) 2015, 2016, Simone Marsili 
+! Copyright (C) 2015-2017, Simone Marsili 
 ! All rights reserved.
 ! License: BSD 3 clause
 
