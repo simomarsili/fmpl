@@ -2,18 +2,36 @@
 ! All rights reserved.
 ! License: BSD 3 clause
 
-module dvmlm_wrapper
+module optimize
   use kinds
   use model, only: etot
   ! wrapper to dvmlm subroutine 
   implicit none
   private 
 
-  public :: dvmlm_minimize
+  public :: fit
 
 contains
 
-  subroutine dvmlm_minimize(nv,ns,nd,data_samples,w,prm,grd,accuracy)
+  subroutine fit(nv,ns,nd,data_samples,w,prm,grd,accuracy,minimizer)
+    integer, intent(in) :: nv,ns,nd
+    integer, intent(in) :: data_samples(nv,nd)
+    real(kflt), intent(in) :: w(nd)
+    real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
+    real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
+    integer, intent(in) :: accuracy
+    character(*) :: minimizer
+
+    select case(trim(minimizer))
+    case('dvmlm')
+       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
+    case default
+       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
+    end select
+    
+  end subroutine fit
+
+  subroutine dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
     use model, only: update_gradient
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
@@ -93,6 +111,6 @@ contains
 
     deallocate(wa)
 
-  end subroutine dvmlm_minimize
+  end subroutine dvmlm_minimizer
 
-end module dvmlm_wrapper
+end module optimize

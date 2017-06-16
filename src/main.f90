@@ -9,7 +9,7 @@ program fmpl
   use data,          only: initialize_data,read_data,data_reweight
   use model,         only: initialize_model, model_set_myv,fix_gauge
   use scrs,          only: print_mat, compute_scores
-  use dvmlm_wrapper, only: dvmlm_minimize
+  use optimize,      only: fit
   implicit none
   ! input variables
   character(long_string) :: data_file, prm_file, scores_file
@@ -37,6 +37,7 @@ program fmpl
   character(4) :: time_unit
   logical :: exist
   character(long_string) :: string
+  character(long_string) :: minimizer
 
 
   ! get command line
@@ -108,7 +109,7 @@ program fmpl
      do iv = 1,nv
         call model_set_myv(nd,nv,iv,data_samples,w,prm(:,iv),grd,err)
         call cpu_time(start)
-        call dvmlm_minimize(nv,ns,nd,data_samples,w,prm(:,iv),grd,accuracy)
+        call fit(nv,ns,nd,data_samples,w,prm(:,iv),grd,accuracy,minimizer)
         call cpu_time(finish)
         elapsed_time = finish - start_min
         tpv = elapsed_time / real(iv)
