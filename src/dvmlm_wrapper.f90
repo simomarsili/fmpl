@@ -13,7 +13,7 @@ module dvmlm_wrapper
 
 contains
 
-  subroutine dvmlm_minimize(nv,ns,nd,data_samples,w,prm,grd,accuracy,iter,totiter)
+  subroutine dvmlm_minimize(nv,ns,nd,data_samples,w,prm,grd,accuracy)
     use model, only: update_gradient
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
@@ -21,7 +21,7 @@ contains
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
     real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
     integer, intent(in) :: accuracy
-    integer, intent(out) :: iter,totiter
+    integer :: niter,neval
     integer :: err
     integer :: ndim,mstep
     character(60) :: task
@@ -53,8 +53,8 @@ contains
     
     fmin = -1.9e30_kflt
     
-    iter = 0
-    totiter = 0
+    niter = 0
+    neval = 0
     task = 'START'
 
     ndim = size(prm)
@@ -65,8 +65,8 @@ contains
     
     call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:))
     do 
-       if(totiter > 100) then 
-          write(0,*) 'warning: totiter > 100'
+       if(neval > 100) then 
+          write(0,*) 'warning: neval > 100'
           flush(0)
        end if
        !call dvmlm_min(prm,grd,size(prm),accuracy,ndim,mstep,task,wa)
@@ -76,13 +76,13 @@ contains
             isave,dsave,wa(2*ndim*mstep+mstep+1),wa(2*ndim*mstep+mstep+ndim+1))
        if(task(1:2) == 'FG') then 
           ! update etot and gradient for line search
-          totiter = totiter + 1
+          neval = neval + 1
           call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:))
        elseif(task(1:4) == 'NEWX') then
           ! start new line search
-          iter = iter + 1
+          niter = niter + 1
        elseif(task(1:4) == 'WARN') then 
-          write(0,*) 'warning ', iter
+          write(0,*) 'warning ', niter
           flush(0)
        elseif(task(1:4) == 'CONV') then 
           ! compute final values for likelihood

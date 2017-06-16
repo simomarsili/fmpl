@@ -1,14 +1,13 @@
 PROG = fmpl
 FC = gfortran
-F90FLAGS = -O3 -fno-automatic -ffast-math
-#F90FLAGS = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan
-FFLAGS = -O3 -fno-automatic -ffast-math
+#FFLAGS = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan
+FFLAGS = -O3 -fno-automatic
 LDFLAGS = 
 SRCS = kinds.f90 dvmlm.f constants.f90 parser.f90 command_line.f90 data.f90 model.f90 dvmlm_wrapper.f90 scrs.f90 main.f90 
 OBJS = kinds.o dvmlm.o constants.o parser.o command_line.o data.o model.o dvmlm_wrapper.o scrs.o main.o 
 
 $(PROG): $(OBJS)
-	$(FC) $(F90FLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 .SUFFIXES: $(SUFFIXES) .f90 .f
 
@@ -16,7 +15,7 @@ $(PROG): $(OBJS)
 	$(FC) $(FFLAGS) -c $<
 
 .f90.o:
-	$(FC) $(F90FLAGS) -c $<
+	$(FC) $(FFLAGS) -c $<
 
 %.o: %.mod
 

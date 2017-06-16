@@ -33,7 +33,6 @@ program fmpl
   !
   integer                :: udata,uscrs,uprm
   integer                :: err,iv
-  integer                :: niter,neval
   real(kflt_single)      :: finish,start,start_min,tpv,elapsed_time,expected_time
   character(4) :: time_unit
   logical :: exist
@@ -108,9 +107,8 @@ program fmpl
      ! loop over features
      do iv = 1,nv
         call model_set_myv(nd,nv,iv,data_samples,w,prm(:,iv),grd,err)
-        niter = 0
         call cpu_time(start)
-        call dvmlm_minimize(nv,ns,nd,data_samples,w,prm(:,iv),grd,accuracy,niter,neval)
+        call dvmlm_minimize(nv,ns,nd,data_samples,w,prm(:,iv),grd,accuracy)
         call cpu_time(finish)
         elapsed_time = finish - start_min
         tpv = elapsed_time / real(iv)
