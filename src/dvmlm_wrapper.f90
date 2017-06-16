@@ -16,7 +16,7 @@ contains
   subroutine dvmlm_minimize(nv,ns,nd,data_samples,w,prm,grd,accuracy,iter,totiter)
     use model, only: update_gradient
     integer, intent(in) :: nv,ns,nd
-    integer, intent(in) :: data_samples(nv,ns)
+    integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
     real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
