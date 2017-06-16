@@ -110,7 +110,7 @@ program fmpl
         call model_set_myv(nd,nv,iv,data_samples,w,prm(:,iv),grd,err)
         niter = 0
         call cpu_time(start)
-        call dvmlm_minimize(nv,ns,nd,size(prm(:,iv)),data_samples,w,prm(:,iv),grd,accuracy,niter,neval)
+        call dvmlm_minimize(nv,ns,nd,data_samples,w,prm(:,iv),grd,accuracy,niter,neval)
         call cpu_time(finish)
         elapsed_time = finish - start_min
         tpv = elapsed_time / real(iv)

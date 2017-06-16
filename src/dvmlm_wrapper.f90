@@ -13,13 +13,13 @@ module dvmlm_wrapper
 
 contains
 
-  subroutine dvmlm_minimize(nv,ns,nd,dim,data_samples,w,prm,grd,accuracy,iter,totiter)
+  subroutine dvmlm_minimize(nv,ns,nd,data_samples,w,prm,grd,accuracy,iter,totiter)
     use model, only: update_gradient
-    integer, intent(in) :: nv,ns,nd,dim
+    integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,ns)
     real(kflt), intent(in) :: w(nd)
-    real(kflt), intent(inout) :: prm(dim)
-    real(kflt), intent(inout) :: grd(dim)
+    real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
+    real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
     integer, intent(in) :: accuracy
     integer, intent(out) :: iter,totiter
     integer :: err
