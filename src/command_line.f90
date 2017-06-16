@@ -10,14 +10,17 @@ module command_line
 
 contains
 
-  subroutine read_args(data_file,wid,lambda,ignore_pivot,accuracy,scores_format,nerrs)
+  subroutine read_args(data_file,prm_file,wid,lambda,ignore_pivot,accuracy,&
+       scores_format,dump_prm,nerrs)
     use kinds
     character(long_string), intent(out) :: data_file
+    character(long_string), intent(out) :: prm_file
     real(kflt),             intent(out) :: wid
     real(kflt),             intent(out) :: lambda
     integer,                intent(out) :: ignore_pivot
     integer,                intent(out) :: accuracy
     character(1),           intent(out) :: scores_format
+    logical,                intent(out) :: dump_prm
     integer,                intent(out) :: nerrs
     integer :: iarg,nargs
     integer :: err
@@ -34,11 +37,13 @@ contains
     nerrs = 0
     ! set defaults
     data_file = ''
+    prm_file = ''
     lambda = 0.01_kflt
     wid = 0.0_kflt
     ignore_pivot = 0
     accuracy = 1
     scores_format = "r"
+    dump_prm = .false.
     ignore_pivot = 0
     do while(iarg <= nargs)
        call get_command_argument(iarg,arg)
@@ -59,6 +64,22 @@ contains
              nerrs = nerrs + 1
              write(0,*) 'error: check data file'
           end if
+       case('-p','--prm')
+          ! read a prm file
+          iarg = iarg + 1
+          call get_command_argument(iarg,arg)
+          prm_file = arg
+          if(len_trim(prm_file) == 0) then
+             nerrs = nerrs + 1
+             write(0,*) 'error: check prm file'
+          end if
+          if(prm_file(1:1) == '-') then
+             nerrs = nerrs + 1
+             write(0,*) 'error: check prm file'
+          end if
+       case('--dump_prm')
+          ! dump a checkfile
+          dump_prm = .true.
        case('-w','--reweight')
           iarg = iarg + 1
           call get_command_argument(iarg,arg)
@@ -75,7 +96,7 @@ contains
              write(0,*) "error ! check lambda"
              nerrs = nerrs + 1
           end if
-       case('-p','--ignore_pivot')
+       case('--ignore_pivot')
           ! remove contrib. from pivot state  to the final scores
           iarg = iarg + 1
           call get_command_argument(iarg,arg)
@@ -114,8 +135,8 @@ contains
     end do
 
     ! check command line
-    if (data_file == '') then
-       write(0,*) 'error ! missing input data file'
+    if (len_trim(data_file) == 0 .and. len_trim(prm_file) == '') then
+       write(0,*) 'error ! either a prm file or a data file should be given as input'
        nerrs = nerrs + 1
     end if
     if (lambda < 1.e-5_kflt) then
