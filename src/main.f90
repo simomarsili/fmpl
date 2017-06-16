@@ -37,8 +37,7 @@ program fmpl
   character(4) :: time_unit
   logical :: exist
   character(long_string) :: string
-  character(long_string) :: minimizer
-
+  character(long_string) :: minimizer='dvmlm'
 
   ! get command line
   call read_args(data_file,prm_file,w_id,lambda,ignore_pivot,accuracy,scores_format,dump_prm,err)

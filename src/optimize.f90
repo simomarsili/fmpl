@@ -31,6 +31,23 @@ contains
     
   end subroutine fit
 
+  subroutine gd_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
+    use model, only: update_gradient
+    integer, intent(in) :: nv,ns,nd
+    integer, intent(in) :: data_samples(nv,nd)
+    real(kflt), intent(in) :: w(nd)
+    real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
+    real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
+    integer, intent(in) :: accuracy
+    integer :: i
+
+    do i = 1,1000
+       call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:))
+       prm = prm - 0.1*grd
+    end do
+    call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:))
+  end subroutine gd_minimizer
+  
   subroutine dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
     use model, only: update_gradient
     integer, intent(in) :: nv,ns,nd
@@ -112,5 +129,20 @@ contains
     deallocate(wa)
 
   end subroutine dvmlm_minimizer
+
+  subroutine shuffle(a)
+    integer, intent(inout) :: a(:)
+    integer :: i, randpos, temp
+    real :: r
+    
+    do i = size(a), 2, -1
+       call random_number(r)
+       randpos = int(r * i) + 1
+       temp = a(randpos)
+       a(randpos) = a(i)
+       a(i) = temp
+    end do
+    
+  end subroutine shuffle
 
 end module optimize
