@@ -135,7 +135,7 @@ contains
     end do
 
     ! check command line
-    if (len_trim(data_file) == 0 .and. len_trim(prm_file) == '') then
+    if (len_trim(data_file) == 0 .and. len_trim(prm_file) == 0) then
        write(0,*) 'error ! either a prm file or a data file should be given as input'
        nerrs = nerrs + 1
     end if
