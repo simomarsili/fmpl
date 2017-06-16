@@ -13,19 +13,24 @@ module dvmlm_wrapper
 
 contains
 
-  subroutine dvmlm_min(prm,grd,dim,accuracy,ndim,mstep,task,wa)
-    integer :: dim
+  subroutine dvmlm_minimize(nv,ns,nd,dim,data_samples,w,prm,grd,accuracy,iter,totiter)
+    use model, only: update_gradient
+    integer, intent(in) :: nv,ns,nd,dim
+    integer, intent(in) :: data_samples(nv,ns)
+    real(kflt), intent(in) :: w(nd)
     real(kflt), intent(inout) :: prm(dim)
     real(kflt), intent(inout) :: grd(dim)
-    integer,       intent(in) :: accuracy,ndim,mstep
-    character(60), intent(inout) :: task
-    real(kflt),    intent(in) :: wa(:)
+    integer, intent(in) :: accuracy
+    integer, intent(out) :: iter,totiter
+    integer :: err
+    integer :: ndim,mstep
+    character(60) :: task
+    integer :: lwa
+    real(kflt), allocatable :: wa(:)
     integer       :: isave(5)
     real(kflt) :: dsave(24)
     real(kflt) :: f
-    real(kflt) :: frtol
-    real(kflt) :: fatol
-    real(kflt) :: fmin
+    real(kflt) :: frtol,fatol,fmin
     external dvmlm
 
     ! set prms for minimization
@@ -45,30 +50,8 @@ contains
        frtol = 1.0e-8_kflt
        fatol = 1.0e-12_kflt
     end select
-
-    fmin = -1.9e30_kflt
     
-    f = - etot
-    call dvmlm(ndim,prm,f,grd,frtol,fatol,fmin,task,mstep,&
-         wa(1),wa(ndim*mstep+1),wa(2*ndim*mstep+1),&
-         isave,dsave,wa(2*ndim*mstep+mstep+1),wa(2*ndim*mstep+mstep+ndim+1))
-
-  end subroutine dvmlm_min
-
-  subroutine dvmlm_minimize(nv,ns,nd,dim,data_samples,w,prm,grd,accuracy,iter,totiter)
-    use model, only: update_gradient
-    integer, intent(in) :: nv,ns,nd,dim
-    integer, intent(in) :: data_samples(nv,ns)
-    real(kflt), intent(in) :: w(nd)
-    real(kflt), intent(inout) :: prm(dim)
-    real(kflt), intent(inout) :: grd(dim)
-    integer, intent(in) :: accuracy
-    integer, intent(out) :: iter,totiter
-    integer :: err
-    integer :: ndim,mstep
-    character(60) :: task
-    real(kflt), allocatable :: wa(:)
-    integer :: lwa
+    fmin = -1.9e30_kflt
     
     iter = 0
     totiter = 0
@@ -86,7 +69,11 @@ contains
           write(0,*) 'warning: totiter > 100'
           flush(0)
        end if
-       call dvmlm_min(prm,grd,size(prm),accuracy,ndim,mstep,task,wa)
+       !call dvmlm_min(prm,grd,size(prm),accuracy,ndim,mstep,task,wa)
+       f = - etot
+       call dvmlm(ndim,prm,f,grd,frtol,fatol,fmin,task,mstep,&
+            wa(1),wa(ndim*mstep+1),wa(2*ndim*mstep+1),&
+            isave,dsave,wa(2*ndim*mstep+mstep+1),wa(2*ndim*mstep+mstep+ndim+1))
        if(task(1:2) == 'FG') then 
           ! update etot and gradient for line search
           totiter = totiter + 1
