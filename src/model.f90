@@ -45,6 +45,35 @@ contains
 
   end subroutine initialize_model
 
+  subroutine update_data_averages(nd,nv,data_samples,w,err)
+    integer, intent(in) :: nd,nv
+    integer, intent(in) :: data_samples(:,:)
+    real(kflt), intent(in) :: w(nd)
+    integer :: id,jv,mys
+    integer :: err
+    integer, allocatable :: list(:)
+    
+    data_f1 = 0.0_kflt
+    data_f2 = 0.0_kflt
+
+    ! compute variable-specific arrays of frequencies
+    allocate(list(nv),stat=err)
+    data_f1 = 0.0_kflt
+    data_f2 = 0.0_kflt
+    do id = 1,nd
+       list = data_samples(:,id)
+       mys = list(out_var)
+       data_f1(mys) = data_f1(mys) + w(id)
+       do jv = 1,nv
+          if(jv /= out_var) then 
+             data_f2(mys,list(jv),jv) = data_f2(mys,list(jv),jv) + w(id)
+          end if
+       end do
+    end do
+    deallocate(list)
+    
+  end subroutine update_data_averages
+
   subroutine model_set_myv(nd,nv,iv,data_samples,w,vprm,grd,err) ! couplings
     integer, intent(in) :: nd,nv
     integer, intent(in) :: iv
@@ -70,20 +99,21 @@ contains
     grd = 0.0_kflt
 
     ! compute variable-specific arrays of frequencies
-    allocate(list(nv),stat=err)
-    data_f1 = 0.0_kflt
-    data_f2 = 0.0_kflt
-    do id = 1,nd
-       list = data_samples(:,id)
-       mys = list(out_var)
-       data_f1(mys) = data_f1(mys) + w(id)
-       do jv = 1,nv
-          if(jv /= out_var) then 
-             data_f2(mys,list(jv),jv) = data_f2(mys,list(jv),jv) + w(id)
-          end if
-       end do
-    end do
-    deallocate(list)
+    call update_data_averages(nd,nv,data_samples,w,err)
+    !allocate(list(nv),stat=err)
+    !data_f1 = 0.0_kflt
+    !data_f2 = 0.0_kflt
+    !do id = 1,nd
+    !   list = data_samples(:,id)
+    !   mys = list(out_var)
+    !   data_f1(mys) = data_f1(mys) + w(id)
+    !   do jv = 1,nv
+    !      if(jv /= out_var) then 
+    !         data_f2(mys,list(jv),jv) = data_f2(mys,list(jv),jv) + w(id)
+    !      end if
+    !   end do
+    !end do
+    !deallocate(list)
 
   end subroutine model_set_myv
 
