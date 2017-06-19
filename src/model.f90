@@ -81,10 +81,6 @@ contains
     integer :: err
 
     out_var = iv
-    model_f1 = 0.0_kflt
-    model_f2 = 0.0_kflt
-    data_f1 = 0.0_kflt
-    data_f2 = 0.0_kflt
     vprm = 0.0_kflt
     grd = 0.0_kflt
 
@@ -142,6 +138,9 @@ contains
     integer :: jv,js
 
     cond_likelihood = 0.0_kflt
+    model_f1 = 0.0_kflt
+    model_f2 = 0.0_kflt
+
     ! loop over data
     do id = 1,nd
        list = data_samples(:,id)
@@ -188,13 +187,9 @@ contains
     real(kflt), intent(out) :: grd2(ns,ns,nv)
     real(kflt), intent(out) :: cond_likelihood,ereg
 
-    ! reset averages and cost before looping over data samples
-    model_f1 = 0.0_kflt
-    model_f2 = 0.0_kflt
-    ereg = - regularization_strength * (sum(fields**2) + 0.5_kflt * sum(couplings**2))
-
     ! take averages over model distribution
     call update_model_averages(nv,ns,nd,data_samples,w,fields,couplings,cond_likelihood)
+    ereg = - regularization_strength * (sum(fields**2) + 0.5_kflt * sum(couplings**2))
 
     ! update gradient 
     grd1 = model_f1 - data_f1 + 2.0_kflt * regularization_strength * fields
