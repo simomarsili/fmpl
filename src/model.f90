@@ -78,9 +78,7 @@ contains
     real(kflt), intent(out) :: grd(:)
     ! make couplings given out_var 
     ! must be called before looping on data
-    integer :: id,jv,mys
     integer :: err
-    integer, allocatable :: list(:)
 
     out_var = iv
     model_f1 = 0.0_kflt
@@ -92,20 +90,6 @@ contains
 
     ! compute variable-specific arrays of frequencies
     call update_data_averages(nd,nv,data_samples,w,err)
-    !allocate(list(nv),stat=err)
-    !data_f1 = 0.0_kflt
-    !data_f2 = 0.0_kflt
-    !do id = 1,nd
-    !   list = data_samples(:,id)
-    !   mys = list(out_var)
-    !   data_f1(mys) = data_f1(mys) + w(id)
-    !   do jv = 1,nv
-    !      if(jv /= out_var) then 
-    !         data_f2(mys,list(jv),jv) = data_f2(mys,list(jv),jv) + w(id)
-    !      end if
-    !   end do
-    !end do
-    !deallocate(list)
 
   end subroutine model_set_myv
 
@@ -151,13 +135,11 @@ contains
     real(kflt), intent(out) :: cond_likelihood
     integer :: list(nv)
     real(kflt) :: conp(ns)
-    real(kflt) :: r,rsum
-    real(kflt) :: pp
+    real(kflt) :: rsum
     integer :: mys
     integer :: id
     real(kflt) :: ww
-    integer :: is, jv
-    integer :: js
+    integer :: jv,js
 
     cond_likelihood = 0.0_kflt
     ! loop over data
