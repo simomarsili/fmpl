@@ -11,8 +11,6 @@ module model
   public :: model_set_myv
   public :: fix_gauge
   public :: update_gradient
-  public :: cond_likelihood
-  public :: etot
 
   ! index of outcome variable (all the others nv - 1 variables are included in the set of explanatory variables)
   integer :: out_var
@@ -25,9 +23,6 @@ module model
 
   ! regularization parameters 
   real(kflt) :: regularization_strength=0.01_kflt ! regularization strength; the default is l2 with regularization_strength=0.01
-
-  ! "cost" function-related variables
-  real(kflt) :: cond_likelihood,ereg,etot
 
 contains
 
@@ -92,9 +87,6 @@ contains
     model_f2 = 0.0_kflt
     data_f1 = 0.0_kflt
     data_f2 = 0.0_kflt
-    cond_likelihood = 0.0_kflt
-    etot = 0.0_kflt
-    ereg = 0.0_kflt
     vprm = 0.0_kflt
     grd = 0.0_kflt
 
@@ -150,12 +142,13 @@ contains
     
   end subroutine fix_gauge
 
-  subroutine update_model_averages(nv,ns,nd,data_samples,w,fields,couplings)
+  subroutine update_model_averages(nv,ns,nd,data_samples,w,fields,couplings,cond_likelihood)
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(in) :: fields(ns)
     real(kflt), intent(in) :: couplings(ns,ns,nv)
+    real(kflt), intent(out) :: cond_likelihood
     integer :: list(nv)
     real(kflt) :: conp(ns)
     real(kflt) :: r,rsum
@@ -166,6 +159,7 @@ contains
     integer :: is, jv
     integer :: js
 
+    cond_likelihood = 0.0_kflt
     ! loop over data
     do id = 1,nd
        list = data_samples(:,id)
@@ -201,8 +195,8 @@ contains
     
   end subroutine update_model_averages
   
-  subroutine update_gradient(nv,ns,nd,data_samples,w,fields,couplings,grd1,grd2)
-    ! update cost-related variables: etot, cond_likelihood, ereg and gradient grd
+  subroutine update_gradient(nv,ns,nd,data_samples,w,fields,couplings,grd1,grd2,cond_likelihood,ereg)
+    ! update cost-related variables: cond_likelihood, ereg and gradient grd
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
@@ -210,26 +204,15 @@ contains
     real(kflt), intent(in) :: couplings(ns,ns,nv)
     real(kflt), intent(out) :: grd1(ns)
     real(kflt), intent(out) :: grd2(ns,ns,nv)
-    real(kflt) :: etot0,de
+    real(kflt), intent(out) :: cond_likelihood,ereg
 
-    ! save old cost function value
-    etot0 = etot
-    
     ! reset averages and cost before looping over data samples
     model_f1 = 0.0_kflt
     model_f2 = 0.0_kflt
-    cond_likelihood = 0.0_kflt
-    etot = 0.0_kflt
     ereg = - regularization_strength * (sum(fields**2) + 0.5_kflt * sum(couplings**2))
 
     ! take averages over model distribution
-    call update_model_averages(nv,ns,nd,data_samples,w,fields,couplings)
-
-    ! add regularization term to conditional likelihood
-    etot = cond_likelihood + ereg
-
-    ! delta cost 
-    de = etot - etot0
+    call update_model_averages(nv,ns,nd,data_samples,w,fields,couplings,cond_likelihood)
 
     ! update gradient 
     grd1 = model_f1 - data_f1 + 2.0_kflt * regularization_strength * fields

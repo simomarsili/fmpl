@@ -4,7 +4,6 @@
 
 module optimize
   use kinds
-  use model, only: etot
   ! wrapper to dvmlm subroutine 
   implicit none
   private 
@@ -38,14 +37,15 @@ contains
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
     real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
+    real(kflt) :: ll,ereg
     integer, intent(in) :: accuracy
     integer :: i
 
     do i = 1,1000
-       call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:))
+       call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
        prm = prm - 0.1*grd
     end do
-    call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:))
+    call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
   end subroutine gd_minimizer
   
   subroutine dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
@@ -66,6 +66,7 @@ contains
     real(kflt) :: dsave(24)
     real(kflt) :: f
     real(kflt) :: frtol,fatol,fmin
+    real(kflt) :: ll,ereg
     external dvmlm
 
     ! set prms for minimization
@@ -98,21 +99,21 @@ contains
     lwa = 2*ndim*mstep + 2*ndim + mstep
     allocate(wa(lwa),stat=err)
     
-    call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:))
+    call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
     do 
        if(neval > 100) then 
           write(0,*) 'warning: neval > 100'
           flush(0)
        end if
        !call dvmlm_min(prm,grd,size(prm),accuracy,ndim,mstep,task,wa)
-       f = - etot
+       f = - (ll + ereg)
        call dvmlm(ndim,prm,f,grd,frtol,fatol,fmin,task,mstep,&
             wa(1),wa(ndim*mstep+1),wa(2*ndim*mstep+1),&
             isave,dsave,wa(2*ndim*mstep+mstep+1),wa(2*ndim*mstep+mstep+ndim+1))
        if(task(1:2) == 'FG') then 
           ! update etot and gradient for line search
           neval = neval + 1
-          call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:))
+          call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
        elseif(task(1:4) == 'NEWX') then
           ! start new line search
           niter = niter + 1
@@ -121,7 +122,7 @@ contains
           flush(0)
        elseif(task(1:4) == 'CONV') then 
           ! compute final values for likelihood
-          call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:))
+          call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
           exit
        end if
     end do
