@@ -67,6 +67,7 @@ contains
     real(kflt) :: f
     real(kflt) :: frtol,fatol,fmin
     real(kflt) :: ll,ereg
+    logical :: verbose = .true.
     external dvmlm
 
     ! set prms for minimization
@@ -114,6 +115,7 @@ contains
           ! update etot and gradient for line search
           neval = neval + 1
           call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
+          if (verbose) write(*,*) neval, real(ll), real(ereg)
        elseif(task(1:4) == 'NEWX') then
           ! start new line search
           niter = niter + 1
@@ -123,6 +125,7 @@ contains
        elseif(task(1:4) == 'CONV') then 
           ! compute final values for likelihood
           call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
+          if (verbose) write(*,*) neval, real(ll), real(ereg)
           exit
        end if
     end do
