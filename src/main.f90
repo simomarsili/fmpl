@@ -7,7 +7,7 @@ program fmpl
   use constants,     only: long_string
   use command_line,  only: read_args
   use data,          only: initialize_data,read_data,data_reweight
-  use model,         only: initialize_model, model_set_myv,fix_gauge
+  use model,         only: initialize_model, model_reset,fix_gauge
   use scrs,          only: print_mat, compute_scores
   use optimize,      only: fit
   implicit none
@@ -106,7 +106,7 @@ program fmpl
      tpv = 0.0_kflt
      ! loop over features
      do iv = 1,nv
-        call model_set_myv(nd,nv,iv,data_samples,w,prm(:,iv),err)
+        call model_reset(nd,nv,iv,data_samples,w,prm(:,iv),err)
         call cpu_time(start)
         call fit(nv,ns,nd,data_samples,w,prm(:,iv),grd,accuracy,minimizer)
         call cpu_time(finish)
@@ -193,7 +193,7 @@ program fmpl
        'Description:                                                   '/&
        '    Either read a matrix of data (-i <file>) and fit a set of  '/&
        '    parameters, or read them directly (-p <file>).             '/&
-       '    Output a file of scores (<file>.scores).                    '/&
+       '    Output a file of scores (<file>.scores).                   '/&
        '                                                               '/&
        'Options:                                                       '/&
        '-h, --help                                                     '/&

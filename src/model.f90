@@ -8,7 +8,7 @@ module model
   private
 
   public :: initialize_model
-  public :: model_set_myv
+  public :: model_reset
   public :: fix_gauge
   public :: update_gradient
 
@@ -69,7 +69,7 @@ contains
     
   end subroutine update_data_averages
 
-  subroutine model_set_myv(nd,nv,iv,data_samples,w,vprm,err) ! couplings
+  subroutine model_reset(nd,nv,iv,data_samples,w,vprm,err) ! couplings
     integer, intent(in) :: nd,nv
     integer, intent(in) :: iv
     integer, intent(in) :: data_samples(:,:)
@@ -85,7 +85,7 @@ contains
     ! compute variable-specific arrays of frequencies
     call update_data_averages(nd,nv,data_samples,w,err)
 
-  end subroutine model_set_myv
+  end subroutine model_reset
 
   subroutine fix_gauge(nv,ns,fields,couplings)
     integer, intent(in) :: nv,ns
