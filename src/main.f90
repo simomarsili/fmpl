@@ -106,7 +106,7 @@ program fmpl
      tpv = 0.0_kflt
      ! loop over features
      do iv = 1,nv
-        call model_set_myv(nd,nv,iv,data_samples,w,prm(:,iv),grd,err)
+        call model_set_myv(nd,nv,iv,data_samples,w,prm(:,iv),err)
         call cpu_time(start)
         call fit(nv,ns,nd,data_samples,w,prm(:,iv),grd,accuracy,minimizer)
         call cpu_time(finish)
