@@ -21,17 +21,11 @@ module model
   real(kflt), allocatable, save :: data_f1(:)        ! data single-variable frequencies (ns)
   real(kflt), allocatable, save :: data_f2(:,:,:)    ! data frequencies for pairs of variables (ns x nv x ns)
 
-  ! regularization parameters 
-  real(kflt) :: regularization_strength=0.01_kflt ! regularization strength; the default is l2 with regularization_strength=0.01
-
 contains
 
-  subroutine initialize_model(nv,ns,lambda)
+  subroutine initialize_model(nv,ns)
     integer, intent(in) :: nv,ns
-    real(kflt), intent(in) :: lambda
     integer :: err
-
-    regularization_strength = lambda
 
     allocate(data_f1(ns),stat=err)
     allocate(data_f2(ns,ns,nv),stat=err)
@@ -174,7 +168,7 @@ contains
     
   end subroutine update_model_averages
   
-  subroutine update_gradient(nv,ns,nd,data_samples,w,fields,couplings,grd1,grd2,cond_likelihood,ereg)
+  subroutine update_gradient(nv,ns,nd,data_samples,w,fields,couplings,grd1,grd2,lambda,cond_likelihood,ereg)
     ! update cost-related variables: cond_likelihood, ereg and gradient grd
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
@@ -183,15 +177,16 @@ contains
     real(kflt), intent(in) :: couplings(ns,ns,nv)
     real(kflt), intent(out) :: grd1(ns)
     real(kflt), intent(out) :: grd2(ns,ns,nv)
+    real(kflt), intent(in) :: lambda
     real(kflt), intent(out) :: cond_likelihood,ereg
 
     ! take averages over model distribution
     call update_model_averages(nv,ns,nd,data_samples,w,fields,couplings,cond_likelihood)
-    ereg = regularization_strength * (sum(fields**2) + 0.5_kflt * sum(couplings**2))
+    ereg = lambda * (sum(fields**2) + 0.5_kflt * sum(couplings**2))
 
     ! update gradient 
-    grd1 = model_f1 - data_f1 + 2.0_kflt * regularization_strength * fields
-    grd2 = model_f2 - data_f2 + 2.0_kflt * 0.5_kflt * regularization_strength * couplings
+    grd1 = model_f1 - data_f1 + 2.0_kflt * lambda * fields
+    grd2 = model_f2 - data_f2 + 2.0_kflt * 0.5_kflt * lambda * couplings
     
   end subroutine update_gradient
 

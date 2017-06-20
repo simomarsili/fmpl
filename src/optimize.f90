@@ -12,50 +12,53 @@ module optimize
 
 contains
 
-  subroutine fit(nd,nv,ns,data_samples,w,prm,grd,accuracy,minimizer,ll,ereg)
+  subroutine fit(nd,nv,ns,data_samples,w,prm,grd,lambda,accuracy,minimizer,ll,ereg)
     integer, intent(in) :: nd,nv,ns
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
     real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
+    real(kflt), intent(in) :: lambda
     real(kflt), intent(out) :: ll,ereg
     integer, intent(in) :: accuracy
     character(*) :: minimizer
 
     select case(trim(minimizer))
     case('dvmlm')
-       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy,ll,ereg)
+       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy,ll,ereg)
     case default
-       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy,ll,ereg)
+       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy,ll,ereg)
     end select
     
   end subroutine fit
 
-  subroutine gd_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
+  subroutine gd_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy)
     use model, only: update_gradient
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
     real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
+    real(kflt), intent(in) :: lambda
     real(kflt) :: ll,ereg
     integer, intent(in) :: accuracy
     integer :: i
 
     do i = 1,1000
-       call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
+       call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),lambda,ll,ereg)
        prm = prm - 0.1*grd
     end do
-    call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
+    call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),lambda,ll,ereg)
   end subroutine gd_minimizer
   
-  subroutine dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy,ll,ereg)
+  subroutine dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy,ll,ereg)
     use model, only: update_gradient
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
     real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
+    real(kflt), intent(in) :: lambda
     integer, intent(in) :: accuracy
     real(kflt), intent(out) :: ll,ereg
     integer :: niter,neval
@@ -101,7 +104,7 @@ contains
     lwa = 2*ndim*mstep + 2*ndim + mstep
     allocate(wa(lwa),stat=err)
     
-    call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
+    call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),lambda,ll,ereg)
     do 
        if(neval > 100) then 
           write(0,*) 'warning: neval > 100'
@@ -115,7 +118,7 @@ contains
        if(task(1:2) == 'FG') then 
           ! update etot and gradient for line search
           neval = neval + 1
-          call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
+          call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),lambda,ll,ereg)
        elseif(task(1:4) == 'NEWX') then
           ! "A new iterate has been computed. Approximated solution, function value and gradient are available for examination."
           ! Start new line search
@@ -126,7 +129,7 @@ contains
           flush(0)
        elseif(task(1:4) == 'CONV') then 
           ! compute final values for likelihood
-          call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
+          call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),lambda,ll,ereg)
           if (verbose) write(*,*) neval, real(ll), real(ereg)
           exit
        end if

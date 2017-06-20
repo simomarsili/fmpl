@@ -100,7 +100,7 @@ program fmpl
      allocate(prm(ns + ns*ns*nv,nv),stat=err)
      allocate(grd(ns + ns*ns*nv),stat=err)
      allocate(scores(nv,nv),stat=err)
-     call initialize_model(nv,ns,lambda)
+     call initialize_model(nv,ns)
 
      write(0,'(/,a)') 'Running..'
      call cpu_time(start_min)
@@ -110,7 +110,7 @@ program fmpl
      do iv = 1,nv
         call model_reset(nd,nv,iv,data_samples,w,prm(:,iv),err)
         call cpu_time(start)
-        call fit(nd,nv,ns,data_samples,w,prm(:,iv),grd,accuracy,minimizer,ll,ereg)
+        call fit(nd,nv,ns,data_samples,w,prm(:,iv),grd,lambda,accuracy,minimizer,ll,ereg)
         call cpu_time(finish)
         llsum = llsum + ll
         elapsed_time = finish - start_min
