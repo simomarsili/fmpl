@@ -13,14 +13,14 @@ contains
   subroutine read_args(data_file,prm_file,wid,lambda,ignore_pivot,accuracy,&
        scores_format,dump_prm,nerrs)
     use kinds
-    character(long_string), intent(out) :: data_file
-    character(long_string), intent(out) :: prm_file
-    real(kflt),             intent(out) :: wid
-    real(kflt),             intent(out) :: lambda
-    integer,                intent(out) :: ignore_pivot
-    integer,                intent(out) :: accuracy
-    character(1),           intent(out) :: scores_format
-    logical,                intent(out) :: dump_prm
+    character(long_string), intent(inout) :: data_file
+    character(long_string), intent(inout) :: prm_file
+    real(kflt),             intent(inout) :: wid
+    real(kflt),             intent(inout) :: lambda
+    integer,                intent(inout) :: ignore_pivot
+    integer,                intent(inout) :: accuracy
+    character(1),           intent(inout) :: scores_format
+    logical,                intent(inout) :: dump_prm
     integer,                intent(out) :: nerrs
     integer :: iarg,nargs
     integer :: err
@@ -35,16 +35,6 @@ contains
 
     iarg = 1
     nerrs = 0
-    ! set defaults
-    data_file = ''
-    prm_file = ''
-    lambda = 0.01_kflt
-    wid = 0.0_kflt
-    ignore_pivot = 0
-    accuracy = 1
-    scores_format = "r"
-    dump_prm = .false.
-    ignore_pivot = 0
     do while(iarg <= nargs)
        call get_command_argument(iarg,arg)
        select case(trim(arg))

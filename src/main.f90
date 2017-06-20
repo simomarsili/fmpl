@@ -40,6 +40,16 @@ program fmpl
   character(long_string) :: minimizer='dvmlm'
   real(kflt) :: ll,ereg,llsum
 
+  ! set defaults
+  data_file = ''
+  prm_file = ''
+  w_id = 0.0_kflt
+  lambda = 0.01_kflt
+  ignore_pivot = 0
+  accuracy = 1
+  scores_format = "r"
+  dump_prm = .false.
+  
   ! get command line
   call read_args(data_file,prm_file,w_id,lambda,ignore_pivot,accuracy,scores_format,dump_prm,err)
   if(err /= 0) then
