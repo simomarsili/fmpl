@@ -38,6 +38,7 @@ program fmpl
   logical :: exist
   character(long_string) :: string
   character(long_string) :: minimizer='dvmlm'
+  real(kflt) :: ll,ereg,llsum
 
   ! get command line
   call read_args(data_file,prm_file,w_id,lambda,ignore_pivot,accuracy,scores_format,dump_prm,err)
@@ -104,12 +105,14 @@ program fmpl
      write(0,'(/,a)') 'Running..'
      call cpu_time(start_min)
      tpv = 0.0_kflt
+     llsum = 0.0_kflt
      ! loop over features
      do iv = 1,nv
         call model_reset(nd,nv,iv,data_samples,w,prm(:,iv),err)
         call cpu_time(start)
-        call fit(nd,nv,ns,data_samples,w,prm(:,iv),grd,accuracy,minimizer)
+        call fit(nd,nv,ns,data_samples,w,prm(:,iv),grd,accuracy,minimizer,ll,ereg)
         call cpu_time(finish)
+        llsum = llsum + ll
         elapsed_time = finish - start_min
         tpv = elapsed_time / real(iv)
         expected_time = tpv * (nv - iv)
@@ -129,6 +132,9 @@ program fmpl
      end do
      flush(0)
   end if
+  llsum = llsum / real(nv)
+  write(*,'("*** average log-likelihood : ",f9.3," ***")') llsum
+  
 
   ! dump prm file
   if (dump_prm) then

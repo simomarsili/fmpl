@@ -12,20 +12,21 @@ module optimize
 
 contains
 
-  subroutine fit(nd,nv,ns,data_samples,w,prm,grd,accuracy,minimizer)
+  subroutine fit(nd,nv,ns,data_samples,w,prm,grd,accuracy,minimizer,ll,ereg)
     integer, intent(in) :: nd,nv,ns
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
     real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
+    real(kflt), intent(out) :: ll,ereg
     integer, intent(in) :: accuracy
     character(*) :: minimizer
 
     select case(trim(minimizer))
     case('dvmlm')
-       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
+       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy,ll,ereg)
     case default
-       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
+       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy,ll,ereg)
     end select
     
   end subroutine fit
@@ -48,7 +49,7 @@ contains
     call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
   end subroutine gd_minimizer
   
-  subroutine dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy)
+  subroutine dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,accuracy,ll,ereg)
     use model, only: update_gradient
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
@@ -56,6 +57,7 @@ contains
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
     real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
     integer, intent(in) :: accuracy
+    real(kflt), intent(out) :: ll,ereg
     integer :: niter,neval
     integer :: err
     integer :: ndim,mstep
@@ -66,8 +68,7 @@ contains
     real(kflt) :: dsave(24)
     real(kflt) :: f
     real(kflt) :: frtol,fatol,fmin
-    real(kflt) :: ll,ereg
-    logical :: verbose = .true.
+    logical :: verbose = .false.
     external dvmlm
 
     ! set prms for minimization
