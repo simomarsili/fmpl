@@ -187,7 +187,7 @@ contains
 
     ! take averages over model distribution
     call update_model_averages(nv,ns,nd,data_samples,w,fields,couplings,cond_likelihood)
-    ereg = - regularization_strength * (sum(fields**2) + 0.5_kflt * sum(couplings**2))
+    ereg = regularization_strength * (sum(fields**2) + 0.5_kflt * sum(couplings**2))
 
     ! update gradient 
     grd1 = model_f1 - data_f1 + 2.0_kflt * regularization_strength * fields

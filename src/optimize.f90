@@ -107,7 +107,7 @@ contains
           flush(0)
        end if
        !call dvmlm_min(prm,grd,size(prm),accuracy,ndim,mstep,task,wa)
-       f = - (ll + ereg)
+       f = - ll + ereg
        call dvmlm(ndim,prm,f,grd,frtol,fatol,fmin,task,mstep,&
             wa(1),wa(ndim*mstep+1),wa(2*ndim*mstep+1),&
             isave,dsave,wa(2*ndim*mstep+mstep+1),wa(2*ndim*mstep+mstep+ndim+1))
@@ -115,10 +115,11 @@ contains
           ! update etot and gradient for line search
           neval = neval + 1
           call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),ll,ereg)
-          if (verbose) write(*,*) neval, real(ll), real(ereg)
        elseif(task(1:4) == 'NEWX') then
-          ! start new line search
+          ! "A new iterate has been computed. Approximated solution, function value and gradient are available for examination."
+          ! Start new line search
           niter = niter + 1
+          if (verbose) write(*,*) niter, neval, real(ll), real(ereg), sqrt(sum(grd**2)/size(grd)),maxval(abs(grd))
        elseif(task(1:4) == 'WARN') then 
           write(0,*) 'warning ', niter
           flush(0)
