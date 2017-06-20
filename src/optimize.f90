@@ -12,8 +12,8 @@ module optimize
 
 contains
 
-  subroutine fit(nv,ns,nd,data_samples,w,prm,grd,accuracy,minimizer)
-    integer, intent(in) :: nv,ns,nd
+  subroutine fit(nd,nv,ns,data_samples,w,prm,grd,accuracy,minimizer)
+    integer, intent(in) :: nd,nv,ns
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)

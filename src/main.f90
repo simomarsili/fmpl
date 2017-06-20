@@ -108,7 +108,7 @@ program fmpl
      do iv = 1,nv
         call model_reset(nd,nv,iv,data_samples,w,prm(:,iv),err)
         call cpu_time(start)
-        call fit(nv,ns,nd,data_samples,w,prm(:,iv),grd,accuracy,minimizer)
+        call fit(nd,nv,ns,data_samples,w,prm(:,iv),grd,accuracy,minimizer)
         call cpu_time(finish)
         elapsed_time = finish - start_min
         tpv = elapsed_time / real(iv)
