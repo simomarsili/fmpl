@@ -63,18 +63,14 @@ contains
     
   end subroutine update_data_averages
 
-  subroutine model_reset(nd,nv,iv,data_samples,w,vprm,err) ! couplings
+  subroutine model_reset(nd,nv,iv,data_samples,w,err) ! couplings
     integer, intent(in) :: nd,nv
     integer, intent(in) :: iv
     integer, intent(in) :: data_samples(:,:)
     real(kflt), intent(in) :: w(nd)
-    real(kflt), intent(out) :: vprm(:)
-    ! make couplings given out_var 
-    ! must be called before looping on data
     integer :: err
 
     out_var = iv
-    vprm = 0.0_kflt
 
     ! compute variable-specific arrays of frequencies
     call update_data_averages(nd,nv,data_samples,w,err)

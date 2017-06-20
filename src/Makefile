@@ -28,7 +28,7 @@ utils.o: utils.f90 kinds.o
 command_line.o: command_line.f90 kinds.o constants.o
 data.o: data.f90 kinds.o constants.o kinds.o parser.o
 model.o: model.f90 kinds.o data.o 
-optimize.o: optimize.f90 dvmlm.o data.o kinds.o
+optimize.o: optimize.f90 dvmlm.o data.o kinds.o model.o
 main.o: main.f90 kinds.o constants.o parser.o command_line.o data.o model.o scrs.o optimize.o 
 
 .PHONY: clean realclean debug showtargets

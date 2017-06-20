@@ -39,6 +39,7 @@ program fmpl
   character(long_string) :: string
   character(long_string) :: minimizer='dvmlm'
   real(kflt) :: ll,ereg,llsum
+  character(12) :: fit_flag ! possible values are: 'optimization', 'single-point'
 
   ! set defaults
   data_file = ''
@@ -49,6 +50,7 @@ program fmpl
   accuracy = 1
   scores_format = "r"
   dump_prm = .false.
+  fit_flag = 'optimization'
   
   ! get command line
   call read_args(data_file,prm_file,w_id,lambda,ignore_pivot,accuracy,scores_format,dump_prm,err)
@@ -58,31 +60,30 @@ program fmpl
   end if
   
   if (len_trim(prm_file) > 0) then
-     ! no fitting; read prm from prm file
-     ! open unit
+     ! no fit; read prm from prm file
      open(newunit=uprm,file=prm_file,status='old',action='read',&
           access='stream',form='unformatted',iostat=err)
      if (err /= 0) then
         write(0,'("error ! cannot access ",a,": file not found")') trim(prm_file)
         stop
      end if
-
-     ! read prm from binary file
      read(uprm) nv
      read(uprm) ns
      allocate(prm(ns + ns*ns*nv,nv),stat=err)
      allocate(scores(nv,nv),stat=err)
      read(uprm) prm
      close(uprm)
+     fit_flag = 'single-point'
+  end if
      
-     ! print an header for the run
-     write(0,104) trim(prm_file), nv, ns
-  else
-     ! print an header for the run
-     write(0,101) trim(data_file), lambda, accuracy
-     if (w_id > 0.0_kflt) write(0,102) w_id
+  ! print an header for the run
+  write(0,101) trim(data_file), trim(prm_file), lambda, accuracy
+  if (w_id > 0.0_kflt) write(0,102) w_id
 
-     ! open data file
+  if (len_trim(data_file) > 0) then
+     ! data analysis
+     ! if no prm file is passed, prm are fitted from data
+     ! if a prm is passed, compute data log-likelihood
      open(newunit=udata,file=data_file,status='old',action='read',iostat=err)
      if(err /= 0) then
         write(0,'("error ! cannot access ",a,": file not found")') trim(data_file)
@@ -107,9 +108,11 @@ program fmpl
      end if
 
      ! allocate parameters and gradient
-     allocate(prm(ns + ns*ns*nv,nv),stat=err)
+     if (len_trim(prm_file) == 0) then
+        allocate(prm(ns + ns*ns*nv,nv),stat=err)
+        allocate(scores(nv,nv),stat=err)
+     end if
      allocate(grd(ns + ns*ns*nv),stat=err)
-     allocate(scores(nv,nv),stat=err)
      call initialize_model(nv,ns)
 
      write(0,'(/,a)') 'Running..'
@@ -118,9 +121,10 @@ program fmpl
      llsum = 0.0_kflt
      ! loop over features
      do iv = 1,nv
-        call model_reset(nd,nv,iv,data_samples,w,prm(:,iv),err)
+        call model_reset(nd,nv,iv,data_samples,w,err)
         call cpu_time(start)
-        call fit(nd,nv,ns,data_samples,w,prm(:,iv),grd,lambda,accuracy,minimizer,ll,ereg)
+        if (fit_flag == 'optimize') prm = 0.0_kflt
+        call fit(nd,nv,ns,data_samples,w,prm(:,iv),grd,lambda,accuracy,minimizer,ll,ereg,fit_flag)
         call cpu_time(finish)
         llsum = llsum + ll
         elapsed_time = finish - start_min
@@ -141,10 +145,9 @@ program fmpl
         !call fix_gauge(nv,ns,prm(:ns,iv),prm(ns+1:,iv))
      end do
      flush(0)
+     llsum = llsum / real(nv)
+     write(*,'("*** average log-likelihood : ",f9.3," ***")') llsum
   end if
-  llsum = llsum / real(nv)
-  write(*,'("*** average log-likelihood : ",f9.3," ***")') llsum
-  
 
   ! dump prm file
   if (dump_prm) then
@@ -180,6 +183,7 @@ program fmpl
        '# fmpl                                                             '/&
        '#                                                                  '/&
        '# input data file: ',a,'                                           '/&
+       '# prm file: ',a,'                                                  '/&
        '# regularization: ',f6.4,'                                         '/&
        '# accuracy level: ',i1,'                                           ')
 
@@ -188,14 +192,6 @@ program fmpl
 
 103 format(&
        'Sample size         : ',i6,'                                       '/&
-       'Dimensionality      : ',i6,'                                       '/&
-       'Classes per variable: ',i6,'                                       ')
-
-104 format(&
-       '# fmpl                                                             '/&
-       '#                                                                  '/&
-       '# prm file: ',a,'                                                  '/&
-       '                                                                   '/&
        'Dimensionality      : ',i6,'                                       '/&
        'Classes per variable: ',i6,'                                       ')
 

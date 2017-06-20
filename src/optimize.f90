@@ -4,6 +4,7 @@
 
 module optimize
   use kinds
+  use model, only: update_gradient
   ! wrapper to dvmlm subroutine 
   implicit none
   private 
@@ -12,28 +13,35 @@ module optimize
 
 contains
 
-  subroutine fit(nd,nv,ns,data_samples,w,prm,grd,lambda,accuracy,minimizer,ll,ereg)
+  subroutine fit(nd,nv,ns,data_samples,w,prm,grd,lambda,accuracy,minimizer,ll,ereg,fit_flag)
     integer, intent(in) :: nd,nv,ns
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(inout) :: prm(ns+ns*ns*nv)
     real(kflt), intent(inout) :: grd(ns+ns*ns*nv)
     real(kflt), intent(in) :: lambda
+    character(*), intent(in) :: minimizer
+    character(12), intent(in) :: fit_flag
     real(kflt), intent(out) :: ll,ereg
     integer, intent(in) :: accuracy
-    character(*) :: minimizer
 
-    select case(trim(minimizer))
-    case('dvmlm')
-       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy,ll,ereg)
+    select case(trim(fit_flag))
+    case('optimization')
+       select case(trim(minimizer))
+       case('dvmlm')
+          call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy,ll,ereg)
+       case default
+          call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy,ll,ereg)
+       end select
+    case('single-point')
+       call update_gradient(nv,ns,nd,data_samples,w,prm(:ns),prm(ns+1:),grd(:ns),grd(ns+1:),lambda,ll,ereg)
     case default
-       call dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy,ll,ereg)
+       write(0,'("unknown flag for fit: ",a)') trim(fit_flag)
     end select
     
   end subroutine fit
 
   subroutine gd_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy)
-    use model, only: update_gradient
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
@@ -52,7 +60,6 @@ contains
   end subroutine gd_minimizer
   
   subroutine dvmlm_minimizer(nv,ns,nd,data_samples,w,prm,grd,lambda,accuracy,ll,ereg)
-    use model, only: update_gradient
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
