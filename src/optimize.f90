@@ -139,19 +139,4 @@ contains
 
   end subroutine dvmlm_minimizer
 
-  subroutine shuffle(a)
-    integer, intent(inout) :: a(:)
-    integer :: i, randpos, temp
-    real :: r
-    
-    do i = size(a), 2, -1
-       call random_number(r)
-       randpos = int(r * i) + 1
-       temp = a(randpos)
-       a(randpos) = a(i)
-       a(i) = temp
-    end do
-    
-  end subroutine shuffle
-
 end module optimize
