@@ -38,7 +38,9 @@ program fmpl
   logical :: exist
   character(long_string) :: string
   character(long_string) :: minimizer='dvmlm'
-  real(kflt) :: ll,ereg,llsum
+  real(kflt) :: ind_ll,ind_prec
+  real(kflt) :: ll,ereg,prec
+  real(kflt) :: llm,precm,ind_llm,ind_precm
   character(12) :: fit_flag ! possible values are: 'optimization', 'single-point'
 
   ! set defaults
@@ -118,15 +120,21 @@ program fmpl
      write(0,'(/,a)') 'Running..'
      call cpu_time(start_min)
      tpv = 0.0_kflt
-     llsum = 0.0_kflt
+     llm = 0.0_kflt
+     precm = 0.0_kflt
+     ind_llm = 0.0_kflt
+     ind_precm = 0.0_kflt
      ! loop over features
      do iv = 1,nv
-        call model_reset(nd,nv,iv,data_samples,w,err)
+        call model_reset(nd,nv,iv,data_samples,w,ind_ll,ind_prec,err)
         call cpu_time(start)
         if (fit_flag == 'optimize') prm = 0.0_kflt
-        call fit(nd,nv,ns,data_samples,w,prm(:,iv),grd,lambda,accuracy,minimizer,ll,ereg,fit_flag)
+        call fit(nd,nv,ns,data_samples,w,prm(:,iv),grd,lambda,accuracy,minimizer,ll,ereg,prec,fit_flag)
         call cpu_time(finish)
-        llsum = llsum + ll
+        ind_llm = ind_llm + ind_ll
+        ind_precm = ind_precm + ind_prec
+        llm = llm + ll
+        precm = precm + prec
         elapsed_time = finish - start_min
         tpv = elapsed_time / real(iv)
         expected_time = tpv * (nv - iv)
@@ -145,8 +153,12 @@ program fmpl
         !call fix_gauge(nv,ns,prm(:ns,iv),prm(ns+1:,iv))
      end do
      flush(0)
-     llsum = llsum / real(nv)
-     write(*,'("*** average log-likelihood : ",f9.3," ***")') llsum
+     ind_llm = ind_llm / real(nv)
+     ind_precm = ind_precm / real(nv)
+     llm = llm / real(nv)
+     precm = precm / real(nv)
+     write(*,'("*** average log-likelihood : ",f9.3," (",f9.3,") ***")') llm, ind_llm
+     write(*,'("*** average precision : ",f9.3," (",f9.3,") ***")') precm, ind_precm
   end if
 
   ! dump prm file

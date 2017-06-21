@@ -34,10 +34,11 @@ contains
 
   end subroutine initialize_model
 
-  subroutine update_data_averages(nd,nv,data_samples,w,err)
+  subroutine update_data_averages(nd,nv,data_samples,w,ind_likelihood,ind_precision,err)
     integer, intent(in) :: nd,nv
     integer, intent(in) :: data_samples(:,:)
     real(kflt), intent(in) :: w(nd)
+    real(kflt), intent(out) :: ind_likelihood,ind_precision
     integer :: id,jv,mys
     integer :: err
     integer, allocatable :: list(:)
@@ -60,20 +61,24 @@ contains
        end do
     end do
     deallocate(list)
+
+    ind_likelihood = sum(data_f1 * log(data_f1), mask=data_f1 > 0.0_kflt)
+    ind_precision = sum(data_f1**2)
     
   end subroutine update_data_averages
 
-  subroutine model_reset(nd,nv,iv,data_samples,w,err) ! couplings
+  subroutine model_reset(nd,nv,iv,data_samples,w,ind_likelihood,ind_precision,err) ! couplings
     integer, intent(in) :: nd,nv
     integer, intent(in) :: iv
     integer, intent(in) :: data_samples(:,:)
     real(kflt), intent(in) :: w(nd)
+    real(kflt), intent(out) :: ind_likelihood,ind_precision
     integer :: err
 
     out_var = iv
 
     ! compute variable-specific arrays of frequencies
-    call update_data_averages(nd,nv,data_samples,w,err)
+    call update_data_averages(nd,nv,data_samples,w,ind_likelihood,ind_precision,err)
 
   end subroutine model_reset
 
@@ -110,13 +115,13 @@ contains
     
   end subroutine fix_gauge
 
-  subroutine update_model_averages(nv,ns,nd,data_samples,w,fields,couplings,cond_likelihood)
+  subroutine update_model_averages(nv,ns,nd,data_samples,w,fields,couplings,cond_likelihood,precision)
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
     real(kflt), intent(in) :: w(nd)
     real(kflt), intent(in) :: fields(ns)
     real(kflt), intent(in) :: couplings(ns,ns,nv)
-    real(kflt), intent(out) :: cond_likelihood
+    real(kflt), intent(out) :: cond_likelihood,precision
     integer :: list(nv)
     real(kflt) :: conp(ns)
     real(kflt) :: rsum
@@ -126,6 +131,7 @@ contains
     integer :: jv,js
 
     cond_likelihood = 0.0_kflt
+    precision = 0.0_kflt
     model_f1 = 0.0_kflt
     model_f2 = 0.0_kflt
 
@@ -149,6 +155,7 @@ contains
        conp = conp / rsum
        
        cond_likelihood = cond_likelihood + ww * log(conp(mys))
+       precision = precision + ww * conp(mys)
        
        ! update histograms 
        ! loop over the states of out_var
@@ -164,7 +171,7 @@ contains
     
   end subroutine update_model_averages
   
-  subroutine update_gradient(nv,ns,nd,data_samples,w,fields,couplings,grd1,grd2,lambda,cond_likelihood,ereg)
+  subroutine update_gradient(nv,ns,nd,data_samples,w,fields,couplings,grd1,grd2,lambda,cond_likelihood,ereg,precision)
     ! update cost-related variables: cond_likelihood, ereg and gradient grd
     integer, intent(in) :: nv,ns,nd
     integer, intent(in) :: data_samples(nv,nd)
@@ -174,10 +181,10 @@ contains
     real(kflt), intent(out) :: grd1(ns)
     real(kflt), intent(out) :: grd2(ns,ns,nv)
     real(kflt), intent(in) :: lambda
-    real(kflt), intent(out) :: cond_likelihood,ereg
+    real(kflt), intent(out) :: cond_likelihood,ereg,precision
 
     ! take averages over model distribution
-    call update_model_averages(nv,ns,nd,data_samples,w,fields,couplings,cond_likelihood)
+    call update_model_averages(nv,ns,nd,data_samples,w,fields,couplings,cond_likelihood,precision)
     ereg = lambda * (sum(fields**2) + 0.5_kflt * sum(couplings**2))
 
     ! update gradient 
