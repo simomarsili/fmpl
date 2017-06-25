@@ -157,8 +157,7 @@ program fmpl
      ind_precm = ind_precm / real(nv)
      llm = llm / real(nv)
      precm = precm / real(nv)
-     write(*,'("*** average log-likelihood : ",f9.3," (",f9.3,") ***")') llm, ind_llm
-     write(*,'("*** average precision : ",f9.3," (",f9.3,") ***")') precm, ind_precm
+     write(*,'("***average_log-likelihood: ",f9.3,f9.3," average_precision: ",f9.3,f9.3," ***")') llm, ind_llm, precm, ind_precm
   end if
 
   ! dump prm file
